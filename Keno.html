@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Keno • West Side Winnings</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background:#0b0b12; color:#ffd700; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  .wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center; padding:20px; }
+  h1 { margin: 10px 0 6px; font-size: 28px; letter-spacing: 0.5px; }
+  h2 { color:#bfa7ff; font-weight:600; margin: 0 0 14px; font-size: 16px; }
+  canvas { width: min(92vw, 380px); height: min(60vh, 380px); border: 2px solid #ffd700; border-radius: 10px; background: #121225; display:block; }
+  button { margin-top:14px; padding: 10px 16px; border-radius: 8px; border: 1px solid #ffd700; background:#1a1a2f; color:#ffd700; font-weight:600; }
+  .badge { margin-top:8px; color:#9bb3ff; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Keno</h1>
+  <h2>West Side Winnings — Test Build</h2>
+  <canvas id="game"></canvas>
+  <button id="action">Play</button>
+  <div class="badge">Placeholder game. Host this folder as-is on GitHub Pages/Netlify.</div>
+</div>
+<script>
+(function() {
+  const title = "Keno";
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  // Set device pixel ratio canvas size
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.min(window.innerWidth * 0.92, 380);
+    const cssH = Math.min(window.innerHeight * 0.60, 380);
+    canvas.width = Math.floor(cssW * dpr);
+    canvas.height = Math.floor(cssH * dpr);
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    drawIntro();
+  }
+  window.addEventListener('resize', resize);
+  function drawIntro() {
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+    // background
+    const grad = ctx.createLinearGradient(0,0,w,h);
+    grad.addColorStop(0, '#1b1440'); grad.addColorStop(1, '#0c0c18');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,w,h);
+    // border glow
+    ctx.strokeStyle = '#ffd700'; ctx.lineWidth = Math.max(2, Math.min(w,h)*0.02);
+    ctx.strokeRect(4,4,w-8,h-8);
+    // title
+    ctx.fillStyle = '#ffd700'; ctx.font = Math.floor(Math.min(w,h)*0.10) + 'px Arial';
+    ctx.textAlign='center';
+    ctx.fillText(title, w/2, h*0.24);
+    // hint
+    ctx.fillStyle = '#bfa7ff'; ctx.font = Math.floor(Math.min(w,h)*0.05) + 'px Arial';
+    ctx.fillText('Tap Play', w/2, h*0.40);
+  }
+  function rng(n) { return Math.floor(Math.random()*n); }
+  function playSlots() {
+    const w = canvas.width, h = canvas.height;
+    drawIntro();
+    const reels = 3, rows = 3, syms = ['♠','♥','♦','♣','★','7'];
+    const cell = Math.min(w*0.20, h*0.15);
+    const startX = w/2 - (reels * cell + (reels-1)*10)/2;
+    const startY = h/2 - (rows * cell + (rows-1)*10)/2;
+    ctx.fillStyle = '#111425'; ctx.fillRect(startX-20, startY-20, reels*cell+(reels-1)*10+40, rows*cell+(rows-1)*10+40);
+    for (let r=0;r<rows;r++) {
+      for (let c=0;c<reels;c++) {
+        const x = startX + c*(cell+10), y = startY + r*(cell+10);
+        ctx.fillStyle = '#0f1530'; ctx.fillRect(x, y, cell, cell);
+        ctx.strokeStyle='#ffd700'; ctx.lineWidth=2; ctx.strokeRect(x,y,cell,cell);
+        const sym = syms[rng(syms.length)];
+        ctx.fillStyle='#ffd700'; ctx.font = Math.floor(cell*0.6)+'px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(sym, x+cell/2, y+cell/2);
+      }
+    }
+    // simple "win" text
+    ctx.fillStyle = '#55ff99'; ctx.font = Math.floor(Math.min(w,h)*0.07) + 'px Arial';
+    ctx.fillText('Spin Complete!', w/2, startY + rows*cell + 60);
+  }
+  function playCards(label) {
+    const w = canvas.width, h = canvas.height;
+    drawIntro();
+    const suits = ['♠','♥','♦','♣'];
+    const ranks = ['A','K','Q','J','10','9','8','7','6','5','4','3','2'];
+    function drawCard(i,x,y) {
+      const cw = Math.min(w*0.22, h*0.18), ch = cw*1.4;
+      ctx.fillStyle='#ffffff'; ctx.fillRect(x,y,cw,ch);
+      ctx.strokeStyle='#000'; ctx.strokeRect(x,y,cw,ch);
+      const suit = suits[rng(4)], rank = ranks[rng(ranks.length)];
+      ctx.fillStyle = (suit==='♥'||suit==='♦') ? '#d33' : '#111';
+      ctx.font = Math.floor(cw*0.28)+'px Arial';
+      ctx.fillText(rank, x+cw*0.18, y+ch*0.28);
+      ctx.fillText(suit, x+cw*0.70, y+ch*0.80);
+      return rank + suit;
+    }
+    let x0 = w/2 - (Math.min(w*0.22, h*0.18)*3 + 40)/2;
+    let y0 = h/2 - (Math.min(w*0.22, h*0.18)*1.4) /2;
+    const hand = [];
+    for (let i=0;i<3;i++) hand.push(drawCard(i, x0 + i*(Math.min(w*0.22, h*0.18)+20), y0));
+    ctx.fillStyle='#bfa7ff'; ctx.font = Math.floor(Math.min(w,h)*0.06)+'px Arial';
+    ctx.textAlign='center'; ctx.fillText(label + ' Deal', w/2, y0 + Math.min(w*0.22, h*0.18)*1.4 + 50);
+  }
+  function playRoulette() {
+    const w = canvas.width, h = canvas.height;
+    drawIntro();
+    const r = Math.min(w,h)*0.30;
+    const cx = w/2, cy = h/2 + 20;
+    const slices = 37;
+    for (let i=0;i<slices;i++) {
+      const a0 = i*(2*Math.PI/slices), a1 = (i+1)*(2*Math.PI/slices);
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,a0,a1);
+      ctx.closePath(); ctx.fillStyle = i % 2 ? '#b30000' : '#111'; ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(cx,cy,r*0.65,0,Math.PI*2); ctx.fillStyle='#0b0b12'; ctx.fill();
+    const win = rng(slices);
+    const ang = (win + 0.5) * (2*Math.PI/slices);
+    const bx = cx + Math.cos(ang)*r*0.85, by = cy + Math.sin(ang)*r*0.85;
+    ctx.beginPath(); ctx.arc(bx,by, Math.max(6, r*0.05), 0, Math.PI*2); ctx.fillStyle='#ffd700'; ctx.fill();
+    ctx.fillStyle='#55ff99'; ctx.font=Math.floor(Math.min(w,h)*0.07)+'px Arial'; ctx.textAlign='center';
+    ctx.fillText('Winning Number: ' + win, w/2, cy + r + 40);
+  }
+  function playKeno() {
+    const w = canvas.width, h = canvas.height;
+    drawIntro();
+    const cols = 8, rows = 5; const total = cols*rows;
+    const cell = Math.min(w*0.10, h*0.12);
+    const startX = w/2 - (cols*cell + (cols-1)*8)/2;
+    const startY = h/2 - (rows*cell + (rows-1)*8)/2;
+    const picks = new Set();
+    while (picks.size < 10) picks.add(rng(total)+1);
+    let n=1;
+    for (let r=0;r<rows;r++) {
+      for (let c=0;c<cols;c++) {
+        const x = startX + c*(cell+8), y = startY + r*(cell+8);
+        const hit = picks.has(n);
+        ctx.fillStyle = hit ? '#2b6' : '#0f1530'; ctx.fillRect(x,y,cell,cell);
+        ctx.strokeStyle='#ffd700'; ctx.strokeRect(x,y,cell,cell);
+        ctx.fillStyle='#ffd700'; ctx.font = Math.floor(cell*0.4)+'px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(n, x+cell/2, y+cell/2);
+        n++;
+      }
+    }
+  }
+  function playFish() {
+    const w = canvas.width, h = canvas.height;
+    drawIntro();
+    const fish = []; for (let i=0;i<8;i++) fish.push({x: Math.floor(Math.random()*w), y: Math.floor(Math.random()*(h*0.5)+h*0.3), s: 2+Math.floor(Math.random()*3)});
+    function frame() {
+      ctx.clearRect(0,0,w,h); drawIntro();
+      ctx.save(); ctx.beginPath(); ctx.rect(10, h*0.30, w-20, h*0.60-40); ctx.clip();
+      for (const f of fish) {
+        f.x += f.s; if (f.x > w-14) f.x = 14;
+        ctx.fillStyle = '#55c1ff'; ctx.beginPath();
+        ctx.ellipse(f.x, f.y, 14, 8, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#0b0b12'; ctx.beginPath();
+        ctx.arc(f.x+6, f.y-1, 2, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+      requestAnimationFrame(frame);
+    }
+    frame();
+  }
+  const btn = document.getElementById('action');
+  function run() {
+    switch (title) {
+      case 'Slots': playSlots(); break;
+      case 'Blackjack': playCards('Blackjack'); break;
+      case 'Roulette': playRoulette(); break;
+      case 'Video Poker': playCards('Video Poker'); break;
+      case 'Keno': playKeno(); break;
+      case 'Fish Shooter': playFish(); break;
+      default: drawIntro();
+    }
+  }
+  btn.addEventListener('click', run);
+  resize();
+})();
+</script>
+</body>
+</html>
