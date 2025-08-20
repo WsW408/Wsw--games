@@ -1,0 +1,5 @@
+ <body style="margin:0;background:#0b0b12;color:#ffd700;
+font:700 22px system-ui;display:grid;
+place-items:center;height:100vh">
+<div>Fish Shooter – Placeholder OK</div>
+</body>
